@@ -7,6 +7,7 @@ from typing import Union, Callable
 from uuid import uuid4
 import uuid
 import sys
+from functools import wraps
 
 class Cache:
     def __init__(self):
