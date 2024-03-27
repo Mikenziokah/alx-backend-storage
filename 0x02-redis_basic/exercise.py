@@ -3,8 +3,9 @@
 """
 
 import redis
-from typing import union
+from typing import Union
 from uuid import uuid4
+import uuid
 
 class Cache:
     def __init__(self):
