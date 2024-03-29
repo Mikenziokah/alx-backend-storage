@@ -1,35 +1,15 @@
 #!/usr/bin/env python3
-""" creating a catche method to store an instance in redis
-"""
+""" Redis module. """
 
-import redis
-from typing import Union, Callable
-from uuid import uuid4
-import uuid
-import sys
 from functools import wraps
-
-class Cache:
-    def __init__(self):
-        """ the cache method
-        """
-        self._redis = redis.Redis()
-        self._redis.flushdb()
-
-    def store(self, data: Union[str, bytes, int, float]) -> str:
-        key = str(uuid.uuid4())
-        self._redis.set(key, data)
-        return key
-
-    def decode_utf8(self, b: bytes) -> str:
-        """ Decodes
-        """
-        return b.decode('utf-8') if type(b) == bytes else b
+import redis
+import sys
+from typing import Union, Optional, Callable
+from uuid import uuid4
 
 
-    def replay(method: Callable):
-        """ Replay method
-        """
+def replay(method: Callable):
+    """ Replay. """
     key = method.__qualname__
     i = "".join([key, ":inputs"])
     o = "".join([key, ":outputs"])
@@ -44,16 +24,14 @@ class Cache:
         print(f"{key}(*{k}) -> {v}")
 
 
-    def call_history(method: Callable) -> Callable:
-        """ Call history.
-        """
+def call_history(method: Callable) -> Callable:
+    """ Call history. """
     key = method.__qualname__
     i = "".join([key, ":inputs"])
     o = "".join([key, ":outputs"])
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        """ Wrapp
-        """
+        """ Wrapp """
         self._redis.rpush(i, str(args))
         res = method(self, *args, **kwargs)
         self._redis.rpush(o, str(res))
@@ -70,3 +48,41 @@ def count_calls(method: Callable) -> Callable:
         self._redis.incr(key)
         return method(self, *args, **kwargs)
     return wrapper
+
+
+def decode_utf8(b: bytes) -> str:
+    """ Decodes """
+    return b.decode('utf-8') if type(b) == bytes else b
+
+
+class Cache:
+    """ Cache class. """
+
+    def __init__(self):
+        """ Init """
+        self._redis = redis.Redis()
+        self._redis.flushdb()
+
+    @count_calls
+    @call_history
+    def store(self, data: Union[str, bytes, int, float]) -> str:
+        """ Random to store """
+        key = str(uuid4())
+        self._redis.set(key, data)
+        return key
+
+    def get(self, key: str, fn: Optional[Callable] = None) -> Union[str,
+                                                                    bytes,
+                                                                    int,
+                                                                    float]:
+        """ Gets  """
+        res = self._redis.get(key)
+        return fn(res) if fn else res
+
+    def get_str(self, data: bytes) -> str:
+        """ Bytes to string """
+        return data.decode('utf-8')
+
+    def get_int(self, data: bytes) -> int:
+        """ Bytes to integer """
+        return int.from_bytes(data, sys.byteorder)
