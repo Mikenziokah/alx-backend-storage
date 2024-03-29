@@ -21,7 +21,7 @@ class Cache:
         self._redis.set(key, data)
         return key
 
-    def decode_utf8(b: bytes) -> str:
+    def decode_utf8(self, b: bytes) -> str:
         """ Decodes
         """
         return b.decode('utf-8') if type(b) == bytes else b
